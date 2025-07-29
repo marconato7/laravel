@@ -8,6 +8,6 @@ php artisan key:generate
 ```
 
 ```sh
-php artisan key:generate
+php artisan migrate
 ```
 
