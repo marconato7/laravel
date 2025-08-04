@@ -1,50 +1,42 @@
 <?php
 
+use App\Models\User;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Validator;
 
-Route::get("/user", fn(Request $request) => $request->user())->middleware("auth:sanctum");
+Route::get("/user", fn(Request $request) => $request->user())
+    ->middleware("auth:sanctum");
 
-Route::get("/hello", function()
+Route::post("/users/register", function (Request $request) 
 {
-    $remetente = Remetente::create("test@test.com");
+    $validator = Validator::make($request->all(), [
+        "name"                  => "required|string|max:255",
+        "username"              => "required|string|max:20|unique:users",
+        "email"                 => "required|string|max:255|unique:users",
+        "password"              => "required|string|min:12|confirmed",
+    ]);
 
-    return response()->json([ "remetente" => $remetente->getEmail() ], 200);
+    if ($validator->fails()) {
+        return response()->json([ "errors" => $validator->errors()],422);
+    }
+
+    $user = User::create([
+        "name"     => $request->name,
+        "username" => $request->username,
+        "email"    => $request->email,
+        "password" => Hash::make($request->password),
+    ]);
+
+    $token = $user->createToken("auth_token")->plainTextToken;
+
+    return response()->json([
+        "access_token" => $token,
+        "token_type" => "Bearer",
+    ]);
 });
 
-class Remetente
+Route::get("/users/profiles", function (Request $request) 
 {
-    private $email;
-
-    private function __construct(string $email)
-    {
-        $this->email = $email;
-    }
-
-    public function getEmail(): string
-    {
-        return $this->email;
-    }
-
-    public static function create(string $email)
-    {
-        $data =
-        [
-            "email" => $email,
-        ];
-
-        $rules =
-        [
-            "email" => [ "required", "email:rfc,dns,strict,spoof", "max:255" ],
-        ];
-
-        $validator = Validator::make($data, $rules);
-        if ($validator->fails())
-        {
-            throw new \Exception($validator->errors()->first());
-        }
-
-        return new self($email);
-    }
-}
+    return User::select("id", "username")->get();
+});

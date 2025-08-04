@@ -13,7 +13,7 @@ services:
     networks:
       - laravel
 
-  web:
+  nginx:
     image: nginx:alpine
     container_name: nginx
     hostname: nginx
